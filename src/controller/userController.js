@@ -1,0 +1,139 @@
+const JWT = require("jsonwebtoken");
+const bcrypt = require("bcrypt");
+require("dotenv").config();
+const key = process.env.KEY;
+const { checkEmail, createData } = require("../services/userService");
+const { isvalidpassword,isvalidEmail} = require("../utils/validators/userValidator");
+
+
+
+
+
+const createUser = async (req, res) => {
+  try {
+    let data = req.body;
+    if (Object.keys(data).length === 0)
+      return res.status(400).send({ message: "plz provide user's data" });
+
+    let { name,phone_number,email, password } = data;
+
+   
+    ///------------------------- Validation------------------------------------------
+    if (!name)
+      return res
+        .status(400)
+        .send({ status: false, message: "nameis mandatory" });
+        if(!name.match(/^[a-z ,.'-]+$/i)) return res.status(400).send({status: false, message: "name is invalid"})
+        if (!phone_number)
+      return res
+        .status(400)
+        .send({ status: false, message: "phone Number is mandatory" });
+        if(!phone_number.match(/^[6-9]\d{9}$/)) return res.status(400).send({status: false, message: "please enter valid indian mobile number" })
+    if (!email)
+      return res
+        .status(400)
+        .send({ status: false, message: "email is mandatory" });
+    if (!isvalidEmail(email))
+      return res
+        .status(400)
+        .send({ status: false, message: "plz enter valid email" });
+    let checkEmailExist = await checkEmail(email); //** */
+    if (checkEmailExist)
+      return res
+        .status(400)
+        .send({ status: false, message: "This email already exist" });
+
+    if (!password)
+      return res
+        .status(400)
+        .send({ status: false, message: "password is mandatory" });
+
+    if (!isvalidpassword(password.trim()))
+      return res
+        .status(400)
+        .send({
+          status: false,
+          message: "password length must be  8 to  15 ",
+        });
+
+    let bcryptPass = await bcrypt.hash(password, 10);
+
+    let userData = { email, password: bcryptPass,name,phone_number };
+
+    let createUser = await createData(userData); //*** */
+
+    // let userId = createUser._id;
+    // let token = JWT.sign({ userId: userId }, key);-------------> use for direct to view homePage
+
+    res
+      .status(201)
+      .send({
+        status: true,
+        message: "User created successfully",
+        data: createUser,
+        
+      });
+  } catch (error) {
+    console.log("error in createUser :-", error.message);
+
+    res.status(500).send({ status: false, message: error.message });
+  }
+};
+
+const loginUser = async (req, res) => {
+  try {
+    let data = req.body;
+
+    if (Object.keys(data).length === 0)
+      return res.status(400).send({ message: "plz provide user's data" });
+    let { email, password } = data;
+    
+
+    if (!email)
+      return res
+        .status(400)
+        .send({ status: false, message: "email is mandatory" });
+    if (!isvalidEmail(email))
+      return res
+        .status(400)
+        .send({ status: false, message: "plz enter valid email" });
+
+        if (!password)
+          return res
+            .status(400)
+            .send({ status: false, message: "password is mandatory" });
+       
+    let findUser = await checkEmail(email);
+    if (!findUser)
+      return res.status(404).send({ status: false, message: " No User present with this email ID" });
+
+
+    let userPassword = findUser.password;
+    let originalPassword = await bcrypt.compare(password, userPassword);
+    if (!originalPassword)
+      return res
+        .status(401)
+        .send({
+          status: false,
+          message: "Incorrect password, plz provide valid password",
+        });
+
+    let userId = findUser.userId;
+    let token = JWT.sign({ userId: userId }, key);
+    return res
+      .status(200)
+      .send({
+        status: true,
+        message: "User login successfull",
+        data: { userId: userId, token: token },
+      });
+  } catch (error) {
+    console.log("error in loginUser", error.message);
+    return res.status(500).send({ status: false, message: error.mesage });
+  }
+};
+
+module.exports = { createUser, loginUser };
+
+
+
