@@ -13,9 +13,9 @@ router.post("/createImage",Authentication,generateImage)
 router.get("/getImages",Authentication,getAllImage)
 router.delete("/deleteImage/:imageId/:id",Authentication,Authorization,deleteImage)
 
-router.all("/*",(req,res)=>{
-    // console.log("Plz enter valid route");
-    res.status(400).send({status:false,message:"invalid route"})
-})
+// router.all("/*",(req,res)=>{
+//     // console.log("Plz enter valid route");
+//     res.status(400).send({status:false,message:"invalid route"})
+// })
 
 module.exports = router
