@@ -6,6 +6,10 @@ const imageSchema = new mongoose.Schema({
         type: String,
         default: shortid.generate
       },
+    size:{
+        type:String,
+        enum :["small","medium","large"]
+    },
     userId:{
         type:String,
         ref:'user'

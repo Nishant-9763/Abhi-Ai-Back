@@ -20,12 +20,21 @@ const configuration = new Configuration({
 
   const generateImage = async function(req,res){
     try {
-        const {prompt,size} = req.body
+        const {prompt,size,number_of_images} = req.body
+        if(!prompt) return res.send("please provide prompt")
+        if (!(["small", "medium", "large"].includes(size))) return res.status(400).send({ status: false, message: "you can use only small, medium, large in size" })
+       
+       
+        let x =  Number(number_of_images)
+        // console.log(x);
+      if(  x >5)return res.status(400).send({status:false,message:"please enter number below 6"})
+      if( 0 >= x)return res.status(400).send({status:false,message:"please enter number above 0"})
 
         const imageSize  = size == 'small' ? '256x256' : size == 'medium' ? '512x512' :  size == 'large' ? '1024x1024' : '512x512'
+
         const aiResponse = await openai.createImage({
             prompt:prompt,
-            n:3,
+            n:x,//(x||3)
             size:imageSize,
             response_format:'url'
         }) 
@@ -47,15 +56,22 @@ const configuration = new Configuration({
         } 
                   
        let postDetails = {prompt,imageUrl:imageUrl,userId:req.decode.userId ,size:size}   //userId:req.decode.userId 
-  
+        
        let finalData = await createData(postDetails)
-
+      
         return  res.send({isSuccess: true,message: "Successfully uploaded image.",data:finalData})
 
 
     } catch (error) {
-        console.log("error from generateImage :-",error.message);
-      return  res.status(500).send({status:false,message:"This request is not available yet",error:error.message})
+        console.log("error from generateImage :-");
+        if (error.response) {
+          console.log(error.response.status);
+          console.log(error.response.data);
+        } else {
+          console.log(error.message);
+        }
+
+      return  res.status(500).send({status:false,message:error,error:error.message})
     }
   }
 
